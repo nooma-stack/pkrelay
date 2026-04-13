@@ -1,5 +1,8 @@
 {
   "name": "pkrelay",
   "private": true,
-  "workspaces": ["mcp-server"]
+  "workspaces": ["mcp-server"],
+  "scripts": {
+    "build": "npm run build --workspace=mcp-server"
+  }
 }
