@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { WebSocketServer, type WebSocket } from 'ws';
 
 interface BridgeMessage {
   id?: number;
@@ -8,6 +9,21 @@ interface BridgeMessage {
   error?: { code: string; message: string };
 }
 
+const DEFAULT_PORT = 18793;
+
+/**
+ * Bridge between MCP server and Chrome extension via local WebSocket.
+ *
+ * The MCP server runs a WebSocket server on localhost. The extension
+ * connects from background.js using `new WebSocket('ws://127.0.0.1:PORT')`.
+ * Messages are JSON objects.
+ *
+ * Why WebSocket instead of native messaging:
+ * - MCP server uses stdin/stdout for MCP protocol (talking to Claude Code)
+ * - Chrome native messaging also uses stdin/stdout
+ * - They can't share the same stdio pipes
+ * - WebSocket gives bidirectional streaming on localhost
+ */
 export class NativeMessagingBridge extends EventEmitter {
   private pendingRequests = new Map<number, {
     resolve: (value: unknown) => void;
@@ -15,37 +31,61 @@ export class NativeMessagingBridge extends EventEmitter {
     timer: NodeJS.Timeout;
   }>();
   private nextId = 1;
-  private buffer = Buffer.alloc(0);
-  private connected = false;
+  private wss: WebSocketServer | null = null;
+  private socket: WebSocket | null = null;
+  private _connected = false;
+  private port: number;
 
-  constructor() {
+  constructor(port?: number) {
     super();
-    this.setupStdio();
+    this.port = port ?? DEFAULT_PORT;
   }
 
-  private setupStdio() {
-    process.stdin.on('data', (chunk: Buffer) => {
-      this.buffer = Buffer.concat([this.buffer, chunk]);
-      this.processBuffer();
-    });
-    process.stdin.on('end', () => {
-      this.connected = false;
-      this.emit('disconnected');
-    });
-    this.connected = true;
-  }
+  /** Start listening for extension connections. */
+  async start(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.wss = new WebSocketServer({
+        port: this.port,
+        host: '127.0.0.1',
+      });
 
-  private processBuffer() {
-    while (this.buffer.length >= 4) {
-      const msgLen = this.buffer.readUInt32LE(0);
-      if (this.buffer.length < 4 + msgLen) break;
-      const msgBytes = this.buffer.subarray(4, 4 + msgLen);
-      this.buffer = this.buffer.subarray(4 + msgLen);
-      try {
-        const msg: BridgeMessage = JSON.parse(msgBytes.toString('utf-8'));
-        this.handleMessage(msg);
-      } catch { /* skip malformed */ }
-    }
+      this.wss.on('connection', (ws) => {
+        // Only allow one extension connection at a time
+        if (this.socket) {
+          ws.close(4000, 'Only one extension connection allowed');
+          return;
+        }
+        this.socket = ws;
+        this._connected = true;
+        this.emit('connected');
+        process.stderr.write('[pkrelay] Extension connected\n');
+
+        ws.on('message', (data: Buffer) => {
+          try {
+            const msg: BridgeMessage = JSON.parse(data.toString('utf-8'));
+            this.handleMessage(msg);
+          } catch { /* skip malformed */ }
+        });
+
+        ws.on('close', () => {
+          this.socket = null;
+          this._connected = false;
+          this.rejectAllPending('Extension disconnected');
+          this.emit('disconnected');
+          process.stderr.write('[pkrelay] Extension disconnected\n');
+        });
+
+        ws.on('error', () => {
+          this.socket = null;
+          this._connected = false;
+          this.rejectAllPending('Extension connection error');
+          this.emit('disconnected');
+        });
+      });
+
+      this.wss.on('error', reject);
+      this.wss.on('listening', () => resolve());
+    });
   }
 
   private handleMessage(msg: BridgeMessage) {
@@ -61,14 +101,14 @@ export class NativeMessagingBridge extends EventEmitter {
   }
 
   send(msg: BridgeMessage) {
-    const json = JSON.stringify(msg);
-    const buf = Buffer.alloc(4 + Buffer.byteLength(json));
-    buf.writeUInt32LE(Buffer.byteLength(json), 0);
-    buf.write(json, 4);
-    process.stdout.write(buf);
+    if (!this.socket) throw new Error('Extension not connected');
+    this.socket.send(JSON.stringify(msg));
   }
 
   async request(method: string, params?: Record<string, unknown>, timeoutMs = 15000): Promise<unknown> {
+    if (!this.socket) {
+      throw new Error('Extension not connected. Make sure PKRelay is loaded in Chrome and has connected to the MCP server.');
+    }
     return new Promise((resolve, reject) => {
       const id = this.nextId++;
       const timer = setTimeout(() => {
@@ -80,5 +120,18 @@ export class NativeMessagingBridge extends EventEmitter {
     });
   }
 
-  get isConnected() { return this.connected; }
+  private rejectAllPending(reason: string) {
+    for (const [, { reject, timer }] of this.pendingRequests) {
+      clearTimeout(timer);
+      reject(new Error(reason));
+    }
+    this.pendingRequests.clear();
+  }
+
+  get isConnected() { return this._connected; }
+
+  async stop() {
+    this.socket?.close();
+    this.wss?.close();
+  }
 }

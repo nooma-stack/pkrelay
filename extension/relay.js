@@ -1,14 +1,21 @@
-// relay.js — Native messaging bridge to PKRelay MCP server
+// relay.js — WebSocket bridge to PKRelay MCP server
+//
+// The MCP server runs a WebSocket server on localhost:18793.
+// The extension connects to it for bidirectional tool communication.
+// This replaces native messaging because the MCP server needs
+// stdin/stdout for the MCP protocol (talking to Claude Code).
+
 const KEEPALIVE_ALARM = 'pkrelay-keepalive';
 const RECONNECT_ALARM = 'pkrelay-reconnect';
-const KEEPALIVE_INTERVAL_MIN = 0.42;
-const NM_HOST_NAME = 'com.nooma.pkrelay';
+const KEEPALIVE_INTERVAL_MIN = 0.42; // ~25 seconds
+const DEFAULT_PORT = 18793;
 
 export class RelayConnection {
   constructor() {
-    this.port = null;
+    this.ws = null;
+    this.serverPort = DEFAULT_PORT;
     this.reconnectAttempts = 0;
-    this.state = 'disconnected';
+    this.state = 'disconnected'; // disconnected | connecting | connected | reconnecting
     this.messageHandlers = new Map();
     this.pendingRequests = new Map();
     this.nextId = 1;
@@ -33,24 +40,47 @@ export class RelayConnection {
   }
 
   send(message) {
-    if (!this.port) throw new Error('Not connected');
-    this.port.postMessage(message);
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error('Not connected to MCP server');
+    }
+    this.ws.send(JSON.stringify(message));
   }
 
-  connect() {
-    if (this.port) return;
+  async connect() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
+
+    // Load port from storage
+    const stored = await chrome.storage.local.get(['mcpServerPort']);
+    this.serverPort = stored.mcpServerPort || DEFAULT_PORT;
+
     this.state = 'connecting';
     this.onStateChange?.(this.state);
 
     try {
-      this.port = chrome.runtime.connectNative(NM_HOST_NAME);
-      this.port.onMessage.addListener((msg) => this._onMessage(msg));
-      this.port.onDisconnect.addListener(() => this._onDisconnect());
-      this.state = 'connected';
-      this.connectedAt = Date.now();
-      this.reconnectAttempts = 0;
-      this.onStateChange?.(this.state);
-      chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: KEEPALIVE_INTERVAL_MIN });
+      this.ws = new WebSocket(`ws://127.0.0.1:${this.serverPort}`);
+
+      this.ws.onopen = () => {
+        this.state = 'connected';
+        this.connectedAt = Date.now();
+        this.reconnectAttempts = 0;
+        this.onStateChange?.(this.state);
+        chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: KEEPALIVE_INTERVAL_MIN });
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          this._onMessage(msg);
+        } catch { /* skip malformed */ }
+      };
+
+      this.ws.onclose = () => {
+        this._onDisconnect();
+      };
+
+      this.ws.onerror = () => {
+        // onerror is always followed by onclose, so cleanup happens there
+      };
     } catch (err) {
       this.state = 'disconnected';
       this.onStateChange?.(this.state);
@@ -61,15 +91,16 @@ export class RelayConnection {
   disconnect() {
     chrome.alarms.clear(KEEPALIVE_ALARM);
     chrome.alarms.clear(RECONNECT_ALARM);
-    if (this.port) {
-      this.port.disconnect();
-      this.port = null;
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
     }
     this.state = 'disconnected';
     this.onStateChange?.(this.state);
   }
 
   _onMessage(msg) {
+    // Response to a pending request
     if (msg.id && this.pendingRequests.has(msg.id)) {
       const { resolve, reject, timer } = this.pendingRequests.get(msg.id);
       clearTimeout(timer);
@@ -78,20 +109,27 @@ export class RelayConnection {
       else resolve(msg.result);
       return;
     }
+
+    // Incoming request from MCP server (tool call)
     if (msg.method && this.messageHandlers.has(msg.method)) {
-      this.messageHandlers.get(msg.method)(msg);
+      const handler = this.messageHandlers.get(msg.method);
+      handler(msg);
+      return;
     }
   }
 
   _onDisconnect() {
-    this.port = null;
+    this.ws = null;
     this.state = 'disconnected';
     this.onStateChange?.(this.state);
+
+    // Reject all pending requests
     for (const [id, { reject, timer }] of this.pendingRequests) {
       clearTimeout(timer);
-      reject(new Error('Disconnected'));
+      reject(new Error('Disconnected from MCP server'));
     }
     this.pendingRequests.clear();
+
     this._scheduleReconnect();
   }
 
@@ -103,7 +141,9 @@ export class RelayConnection {
 
   handleAlarm(alarm) {
     if (alarm.name === KEEPALIVE_ALARM) {
-      if (this.port) this.send({ method: 'ping' });
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.send({ method: 'ping' });
+      }
     } else if (alarm.name === RECONNECT_ALARM) {
       this.connect();
     }
