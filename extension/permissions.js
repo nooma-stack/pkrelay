@@ -73,6 +73,11 @@ export class PermissionManager {
     this.sessionGrants.set(tabId, 'granted');
   }
 
+  // Revoke session access (user manually toggled off)
+  revokeSession(tabId) {
+    this.sessionGrants.delete(tabId);
+  }
+
   // Grant permanent access (promotes to "full")
   grantAlways(url) {
     const pattern = this.urlToPattern(url);

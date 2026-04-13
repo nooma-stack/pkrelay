@@ -8,8 +8,7 @@
     "tabs",
     "activeTab",
     "storage",
-    "alarms",
-    "notifications"
+    "alarms"
   ],
   "host_permissions": [
     "http://127.0.0.1/*",

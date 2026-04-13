@@ -26,14 +26,24 @@ export function registerSnapshotTool(server: McpServer, bridge: NativeMessagingB
         format: params.format,
         ...(params.selector !== undefined && { selector: params.selector }),
         ...(params.tabId !== undefined && { tabId: params.tabId }),
-      });
+      }) as Record<string, unknown>;
+
+      // For compact format, return only the lines array to minimize tokens
+      let output: string;
+      if (params.format === 'compact' || !params.format) {
+        const content = result?.content as Record<string, unknown> | undefined;
+        const lines = content?.lines as string[] | undefined;
+        if (lines) {
+          output = lines.join('\n');
+        } else {
+          output = typeof result === 'string' ? result : JSON.stringify(result);
+        }
+      } else {
+        output = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+      }
+
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-          },
-        ],
+        content: [{ type: 'text' as const, text: output }],
       };
     },
   );

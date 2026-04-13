@@ -104,6 +104,8 @@ export class TabManager {
     // Track user-initiated detaches to suppress auto-attach
     if (reason === 'toggle' || reason === 'agent') {
       this.userDetached.add(tabId);
+      // Revoke session grant so re-attach requires re-approval
+      if (this.perms) this.perms.revokeSession(tabId);
     }
 
     // Notify relay
@@ -296,22 +298,17 @@ export class TabManager {
           }
         });
 
-        // Show Chrome notification with Allow/Deny buttons
-        const hostname = (() => {
-          try { return new URL(url).hostname; } catch { return url; }
-        })();
-        const notifId = `pkrelay-perm-${tabId}`;
-        chrome.notifications.create(notifId, {
-          type: 'basic',
-          iconUrl: 'icons/icon128.png',
-          title: 'PKRelay — Tab Access Request',
-          message: `An agent wants to access:\n${tab?.title || 'Untitled'}\n${hostname}`,
-          buttons: [
-            { title: 'Allow' },
-            { title: 'Deny' }
-          ],
-          requireInteraction: true,
-          priority: 2
+        // Open a permission prompt window
+        const promptUrl = chrome.runtime.getURL('permission-prompt.html')
+          + `?tabId=${tabId}`
+          + `&title=${encodeURIComponent(tab?.title || 'Untitled')}`
+          + `&url=${encodeURIComponent(url)}`;
+        chrome.windows.create({
+          url: promptUrl,
+          type: 'popup',
+          width: 420,
+          height: 280,
+          focused: true,
         });
       }
       // requestPermission returns the shared promise — concurrent callers all await it

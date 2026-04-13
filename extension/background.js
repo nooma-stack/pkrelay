@@ -319,6 +319,7 @@ relay.on('snapshot', async (msg) => {
       diff: params?.diff,
       elementId: params?.elementId,
       depth: params?.depth,
+      selector: params?.selector,
     });
     relay.send({ id, result });
   } catch (err) {
@@ -374,11 +375,53 @@ relay.on('click', async (msg) => {
     const tabId = resolveTabTarget(params?.tabId);
     if (tabId == null) throw new Error('No attached tab');
     await tabMgr.enforcePermission(tabId);
-    const result = await actions.execute(tabId, {
-      command: 'click',
-      params: { elementIndex: params?.elementIndex },
-    });
-    relay.send({ id, result });
+
+    // Resolve element by index, selector, or text
+    if (params?.index != null || params?.elementIndex != null) {
+      const result = await actions.execute(tabId, {
+        command: 'click',
+        params: { elementIndex: params.index ?? params.elementIndex },
+      });
+      relay.send({ id, result });
+    } else if (params?.selector || params?.text) {
+      const jsExpr = params.selector
+        ? `(() => {
+            const el = document.querySelector(${JSON.stringify(params.selector)});
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), text: el.textContent?.substring(0, 40) };
+          })()`
+        : `(() => {
+            const target = ${JSON.stringify(params.text)}.toLowerCase();
+            const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
+            let node;
+            while (node = walker.nextNode()) {
+              if (node.children.length > 3) continue;
+              const text = node.textContent?.trim().toLowerCase() || '';
+              const ariaLabel = (node.getAttribute('aria-label') || '').toLowerCase();
+              const title = (node.getAttribute('title') || '').toLowerCase();
+              const match = text.includes(target) || ariaLabel.includes(target) || title.includes(target);
+              if (match && node.offsetWidth > 0) {
+                const r = node.getBoundingClientRect();
+                const label = node.textContent?.trim() || node.getAttribute('aria-label') || node.getAttribute('title') || '';
+                return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), text: label.substring(0, 40) };
+              }
+            }
+            return null;
+          })()`;
+
+      const evalResult = await chrome.debugger.sendCommand({ tabId }, 'Runtime.evaluate', {
+        expression: jsExpr,
+        returnByValue: true,
+      });
+      const coords = evalResult?.result?.value;
+      if (!coords) throw new Error(`Element not found: ${params.selector || params.text}`);
+
+      await actions.mouseClick(tabId, coords.x, coords.y);
+      relay.send({ id, result: { ok: true, action: `click "${coords.text?.trim()}"` } });
+    } else {
+      throw new Error('click requires index, selector, or text');
+    }
   } catch (err) {
     relay.send({ id, error: { code: 'CLICK_ERROR', message: err.message } });
   }
@@ -391,10 +434,54 @@ relay.on('type', async (msg) => {
     const tabId = resolveTabTarget(params?.tabId);
     if (tabId == null) throw new Error('No attached tab');
     await tabMgr.enforcePermission(tabId);
+    // Focus element by selector or elementIndex before typing
+    if (params?.selector) {
+      await chrome.debugger.sendCommand({ tabId }, 'Runtime.evaluate', {
+        expression: `(() => { const el = document.querySelector(${JSON.stringify(params.selector)}); if (el) { el.focus(); return 'focused'; } return 'not found'; })()`,
+        returnByValue: true
+      });
+      await new Promise(r => setTimeout(r, 50));
+    }
+
+    // Clear field if requested
+    if (params?.clear) {
+      // Select all + delete via keyboard (works regardless of how element was focused)
+      await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchKeyEvent', {
+        type: 'rawKeyDown', key: 'a', code: 'KeyA',
+        windowsVirtualKeyCode: 65, modifiers: 4 // Meta (Cmd on Mac)
+      });
+      await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchKeyEvent', {
+        type: 'keyUp', key: 'a', code: 'KeyA',
+        windowsVirtualKeyCode: 65, modifiers: 4
+      });
+      await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchKeyEvent', {
+        type: 'rawKeyDown', key: 'Backspace', code: 'Backspace',
+        windowsVirtualKeyCode: 8
+      });
+      await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchKeyEvent', {
+        type: 'keyUp', key: 'Backspace', code: 'Backspace',
+        windowsVirtualKeyCode: 8
+      });
+      await new Promise(r => setTimeout(r, 50));
+    }
+
     const result = await actions.execute(tabId, {
       command: 'type',
       params: { elementIndex: params?.elementIndex, text: params?.text },
     });
+
+    // Submit (press Enter) if requested
+    if (params?.submit) {
+      await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchKeyEvent', {
+        type: 'rawKeyDown', key: 'Enter', code: 'Enter',
+        windowsVirtualKeyCode: 13
+      });
+      await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchKeyEvent', {
+        type: 'keyUp', key: 'Enter', code: 'Enter',
+        windowsVirtualKeyCode: 13
+      });
+    }
+
     relay.send({ id, result });
   } catch (err) {
     relay.send({ id, error: { code: 'TYPE_ERROR', message: err.message } });
@@ -637,25 +724,6 @@ relay.on('pkrelay.permission.deny', (msg) => {
   updateTabBadge(tabId);
 });
 
-// --- Chrome notification button handler (Allow/Deny for "ask" permission) ---
-chrome.notifications.onButtonClicked.addListener((notifId, buttonIndex) => {
-  if (!notifId.startsWith('pkrelay-perm-')) return;
-  const tabId = parseInt(notifId.replace('pkrelay-perm-', ''), 10);
-  if (isNaN(tabId)) return;
-
-  const granted = buttonIndex === 0; // 0 = Allow, 1 = Deny
-  perms.resolvePermissionRequest(tabId, granted, granted ? 'session' : undefined);
-  updateTabBadge(tabId);
-  chrome.notifications.clear(notifId);
-  notifyPopup();
-});
-
-// Auto-clear notification if permission was resolved via popup
-chrome.notifications.onClosed.addListener((notifId) => {
-  // Nothing to do — if the user dismissed without clicking a button,
-  // the pending request stays until resolved via popup or timeout
-});
-
 // --- Extension reload (callable by agent) ---
 relay.on('pkrelay.reload', async (msg) => {
   const { id } = msg;
@@ -720,8 +788,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'respondPermission') {
     perms.resolvePermissionRequest(msg.tabId, msg.granted, msg.duration);
     updateTabBadge(msg.tabId);
-    // Clear the notification if it was resolved via popup
-    chrome.notifications.clear(`pkrelay-perm-${msg.tabId}`);
     sendResponse({ ok: true });
   }
 });

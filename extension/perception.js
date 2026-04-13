@@ -29,12 +29,32 @@ export class PerceptionEngine {
 
   // Take a full snapshot of a tab
   async snapshot(tabId, options = {}) {
-    const { diff = false, elementId = null, depth } = options;
+    const { diff = false, elementId = null, depth, selector } = options;
 
     // Ensure Accessibility domain is enabled
     try {
       await chrome.debugger.sendCommand({ tabId }, 'Accessibility.enable');
     } catch {}
+
+    // If selector is provided, resolve to a backendNodeId for subtree filtering
+    let selectorNodeId = null;
+    if (selector) {
+      try {
+        await chrome.debugger.sendCommand({ tabId }, 'DOM.enable');
+        const doc = await chrome.debugger.sendCommand({ tabId }, 'DOM.getDocument');
+        const queryResult = await chrome.debugger.sendCommand({ tabId }, 'DOM.querySelector', {
+          nodeId: doc.root.nodeId,
+          selector,
+        });
+        if (queryResult?.nodeId) {
+          // Get the backendNodeId for this DOM node
+          const nodeDesc = await chrome.debugger.sendCommand({ tabId }, 'DOM.describeNode', {
+            nodeId: queryResult.nodeId,
+          });
+          selectorNodeId = nodeDesc?.node?.backendNodeId;
+        }
+      } catch {}
+    }
 
     // 1. Get accessibility tree
     const axParams = {};
@@ -44,7 +64,25 @@ export class PerceptionEngine {
     );
 
     // 2. Filter and process nodes
-    const nodes = this.processAXTree(axTree.nodes);
+    let nodes = this.processAXTree(axTree.nodes);
+
+    // 3. If selector was provided, filter to subtree
+    if (selectorNodeId) {
+      // Find all backendNodeIds that are descendants of the selector node
+      const allNodes = axTree.nodes;
+      const selectorAxNode = allNodes.find(n => n.backendDOMNodeId === selectorNodeId);
+      if (selectorAxNode) {
+        const keepIds = new Set();
+        const collectChildren = (nodeId) => {
+          keepIds.add(nodeId);
+          for (const n of allNodes) {
+            if (n.parentId === nodeId) collectChildren(n.nodeId);
+          }
+        };
+        collectChildren(selectorAxNode.nodeId);
+        nodes = nodes.filter(n => keepIds.has(n.nodeId));
+      }
+    }
 
     // 3. Get box models for visible elements (parallel)
     const boxModels = await this.getBoxModels(tabId, nodes);
@@ -271,7 +309,7 @@ export class PerceptionEngine {
       const value = node.value?.value;
       if (value !== undefined && value !== '') line += ` value:"${value}"`;
 
-      indexed.push({ idx, line, role, name, box, node });
+      indexed.push({ idx, line, role, name, box });
       lines.push(line);
     }
 

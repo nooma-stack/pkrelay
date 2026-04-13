@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PKRelay — Permission Request</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e1e1e1;
+      padding: 20px;
+    }
+    h2 {
+      font-size: 15px;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .tab-info {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .tab-title {
+      font-size: 13px;
+      color: #e1e1e1;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+    .tab-url {
+      font-size: 11px;
+      color: #8a8a9a;
+      font-family: 'SF Mono', Menlo, Monaco, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-allow {
+      background: #22C55E;
+      color: #fff;
+    }
+    .btn-allow:hover { background: #16A34A; }
+    .btn-deny {
+      background: #16213e;
+      color: #EF4444;
+      border: 1px solid #EF4444;
+    }
+    .btn-deny:hover { background: #2a1a2e; }
+  </style>
+</head>
+<body>
+  <h2>Tab Access Request</h2>
+  <p style="font-size: 12px; color: #8a8a9a; margin-bottom: 12px;">An AI agent wants to access this tab:</p>
+  <div class="tab-info">
+    <div class="tab-title" id="title">Loading...</div>
+    <div class="tab-url" id="url"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-allow" id="allowBtn">Allow</button>
+    <button class="btn-deny" id="denyBtn">Deny</button>
+  </div>
+  <script src="permission-prompt.js"></script>
+</body>
+</html>

@@ -265,7 +265,7 @@ $('#settingsLink').addEventListener('click', (e) => {
 
 $('#feedbackLink').addEventListener('click', (e) => {
   e.preventDefault();
-  chrome.tabs.create({ url: 'https://github.com/PatrickLHT/pkrelay/issues/new' });
+  chrome.tabs.create({ url: 'https://github.com/nooma-stack/pkrelay/issues/new' });
 });
 
 $('#connectBtn').addEventListener('click', () => {
@@ -279,26 +279,9 @@ $('#updateBtn').addEventListener('click', () => {
   btn.textContent = 'Checking...';
   btn.disabled = true;
 
-  chrome.runtime.sendNativeMessage('com.nooma.pkrelay', { action: 'pullUpdate' }, (resp) => {
-    if (chrome.runtime.lastError) {
-      // Native messaging not available — fall back to just reloading from disk
-      chrome.storage.local.set({ updateFlash: 'Reloaded from disk' });
-      chrome.runtime.reload();
-      return;
-    }
-    if (resp?.updated) {
-      const msg = resp.version ? `Updated to v${resp.version}!` : 'Updated!';
-      chrome.storage.local.set({ updateFlash: msg });
-      chrome.runtime.reload();
-    } else if (resp?.upToDate) {
-      btn.textContent = 'Up to date';
-      setTimeout(() => { btn.textContent = 'Update'; btn.disabled = false; }, 2000);
-    } else {
-      btn.textContent = 'Error';
-      btn.title = resp?.error || 'Unknown error';
-      setTimeout(() => { btn.textContent = 'Update'; btn.disabled = false; btn.title = 'Check for updates from GitHub'; }, 3000);
-    }
-  });
+  // Native messaging not available in this extension — just reload from disk
+  chrome.storage.local.set({ updateFlash: 'Reloaded from disk' });
+  chrome.runtime.reload();
 });
 
 $('#reloadBtn').addEventListener('click', () => chrome.runtime.reload());
