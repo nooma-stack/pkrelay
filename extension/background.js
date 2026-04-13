@@ -394,20 +394,29 @@ relay.on('click', async (msg) => {
         : `(() => {
             const target = ${JSON.stringify(params.text)}.toLowerCase();
             const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
-            let node;
+            let node, candidates = [];
             while (node = walker.nextNode()) {
-              if (node.children.length > 3) continue;
               const text = node.textContent?.trim().toLowerCase() || '';
               const ariaLabel = (node.getAttribute('aria-label') || '').toLowerCase();
               const title = (node.getAttribute('title') || '').toLowerCase();
               const match = text.includes(target) || ariaLabel.includes(target) || title.includes(target);
               if (match && node.offsetWidth > 0) {
                 const r = node.getBoundingClientRect();
-                const label = node.textContent?.trim() || node.getAttribute('aria-label') || node.getAttribute('title') || '';
-                return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), text: label.substring(0, 40) };
+                if (r.width > 0 && r.height > 0) {
+                  const label = node.textContent?.trim() || node.getAttribute('aria-label') || node.getAttribute('title') || '';
+                  candidates.push({ el: node, area: r.width * r.height, x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), text: label.substring(0, 40) });
+                }
               }
             }
-            return null;
+            if (candidates.length === 0) return null;
+            // Prefer interactive elements (button, a, input) over non-interactive
+            const interactive = new Set(['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA']);
+            const interactiveCandidates = candidates.filter(c => interactive.has(c.el.tagName) || c.el.getAttribute('role') === 'button');
+            // Use interactive matches if any, otherwise fall back to all; sort by smallest area
+            const pool = interactiveCandidates.length > 0 ? interactiveCandidates : candidates;
+            pool.sort((a, b) => a.area - b.area);
+            const best = pool[0];
+            return { x: best.x, y: best.y, text: best.text };
           })()`;
 
       const evalResult = await chrome.debugger.sendCommand({ tabId }, 'Runtime.evaluate', {
