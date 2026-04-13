@@ -41,8 +41,7 @@
       margin-bottom: 6px;
     }
 
-    input[type="text"],
-    input[type="number"] {
+    input[type="text"] {
       width: 100%;
       padding: 10px 12px;
       font-size: 14px;
@@ -205,7 +204,7 @@
 </head>
 <body>
   <h1>PKRelay Settings</h1>
-  <p class="subtitle">Configure your CDP server bridge (v2.0)</p>
+  <p class="subtitle">MCP-native AI browser bridge (v3.0)</p>
 
   <div class="form-group">
     <label for="browserName">Browser Name</label>
@@ -214,14 +213,8 @@
   </div>
 
   <div class="form-group">
-    <label for="cdpServerPort">CDP Server Port</label>
-    <input type="number" id="cdpServerPort" min="1" max="65535" placeholder="18792">
-    <p class="help">Port where PKRelay's CDP bridge server listens (default: 18792). Must match <code>cdpUrl</code> in OpenClaw config.</p>
-  </div>
-
-  <div class="form-group">
-    <label>CDP Bridge Status</label>
-    <p class="help" id="nmStatus" style="margin-top: 4px;">Checking native host…</p>
+    <label>Native Host Status</label>
+    <p class="help" id="nmStatus" style="margin-top: 4px;">Checking native host...</p>
   </div>
 
   <div class="form-group">
@@ -239,24 +232,24 @@
 
   <div class="btn-row">
     <button class="btn-primary" id="saveBtn">Save</button>
-    <button class="btn-secondary" id="testBtn">Test CDP Server</button>
+    <button class="btn-secondary" id="testBtn">Test Connection</button>
     <span id="healthStatus"></span>
   </div>
 
   <div class="guide">
     <h2>Getting Started</h2>
     <ol>
-      <li>Install the CDP bridge: <code>cd ~/pkrelay &amp;&amp; ./install.sh</code></li>
+      <li>Install the native host: <code>cd ~/Developer/nooma-stack/pkrelay &amp;&amp; ./native-host/install.sh</code></li>
       <li>Set your browser name above (e.g., "Arc")</li>
-      <li>Click <strong>Test CDP Server</strong> to verify: <code>http://127.0.0.1:18792/json/version</code></li>
+      <li>Click <strong>Test Connection</strong> to verify the native messaging host</li>
       <li>Click the PKRelay icon in the toolbar to manage tab permissions</li>
       <li>Attach tabs by clicking the green/gray dot next to each tab in the popup</li>
-      <li>OpenClaw config should have: <code>"cdpUrl": "http://127.0.0.1:18792"</code></li>
+      <li>Add PKRelay as an MCP server in your AI tool's config</li>
     </ol>
   </div>
 
   <p style="margin-top: 16px; font-size: 13px; color: #8a8a9a;">
-    Found a bug or have a suggestion? <a href="https://github.com/PatrickLHT/pkrelay/issues/new" target="_blank" style="color: #3B82F6;">Submit feedback on GitHub</a>
+    Found a bug or have a suggestion? <a href="https://github.com/nooma-stack/pkrelay/issues/new" target="_blank" style="color: #3B82F6;">Submit feedback on GitHub</a>
   </p>
 
   <div class="toast" id="toast">Saved</div>

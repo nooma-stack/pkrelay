@@ -162,6 +162,32 @@ header {
   cursor: default;
 }
 
+.pending-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.tab-toggle.allow {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22C55E;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.tab-toggle.allow:hover {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+.tab-toggle.deny {
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.tab-toggle.deny:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
 .tab-toggle:disabled {
   opacity: 0.6;
   cursor: default;

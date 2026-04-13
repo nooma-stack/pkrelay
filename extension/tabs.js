@@ -285,15 +285,33 @@ export class TabManager {
       throw new Error(`Access denied: tab ${tabId} has "No Access" permission`);
     }
     if (level === 'ask') {
-      // If no pending request, send one to the relay first
+      // If no pending request, send one to the relay and show a notification
       if (!this.perms.hasPendingRequest(tabId)) {
-        // Wrap in forwardCDPEvent so the gateway forwards to /cdp clients
+        // Notify the relay (for MCP clients that listen)
         this.relay.send({
           method: 'forwardCDPEvent',
           params: {
             method: 'pkrelay.permission.request',
             params: { tabId, url, title: tab?.title || '' }
           }
+        });
+
+        // Show Chrome notification with Allow/Deny buttons
+        const hostname = (() => {
+          try { return new URL(url).hostname; } catch { return url; }
+        })();
+        const notifId = `pkrelay-perm-${tabId}`;
+        chrome.notifications.create(notifId, {
+          type: 'basic',
+          iconUrl: 'icons/icon128.png',
+          title: 'PKRelay — Tab Access Request',
+          message: `An agent wants to access:\n${tab?.title || 'Untitled'}\n${hostname}`,
+          buttons: [
+            { title: 'Allow' },
+            { title: 'Deny' }
+          ],
+          requireInteraction: true,
+          priority: 2
         });
       }
       // requestPermission returns the shared promise — concurrent callers all await it

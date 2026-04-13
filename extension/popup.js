@@ -99,20 +99,62 @@ function renderTabs(tabs, isFullBrowser) {
     item.className = 'tab-item';
 
     // Connect/Disconnect toggle button
-    const toggle = document.createElement('button');
-    toggle.className = 'tab-toggle';
     if (tab.hasPendingRequest) {
-      toggle.classList.add('pending');
-      toggle.textContent = 'Pending';
-      toggle.disabled = true;
-    } else if (tab.attached) {
-      toggle.classList.add('connected');
-      toggle.textContent = 'On';
+      // Show Allow / Deny buttons for pending permission requests
+      const pendingGroup = document.createElement('div');
+      pendingGroup.className = 'pending-actions';
+
+      const allowBtn = document.createElement('button');
+      allowBtn.className = 'tab-toggle allow';
+      allowBtn.textContent = 'Allow';
+      allowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        allowBtn.disabled = true;
+        chrome.runtime.sendMessage({
+          type: 'respondPermission',
+          tabId: tab.tabId,
+          granted: true,
+          duration: 'session'
+        }, () => refresh());
+      });
+
+      const denyBtn = document.createElement('button');
+      denyBtn.className = 'tab-toggle deny';
+      denyBtn.textContent = 'Deny';
+      denyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        denyBtn.disabled = true;
+        chrome.runtime.sendMessage({
+          type: 'respondPermission',
+          tabId: tab.tabId,
+          granted: false
+        }, () => refresh());
+      });
+
+      pendingGroup.appendChild(allowBtn);
+      pendingGroup.appendChild(denyBtn);
+      item.appendChild(pendingGroup);
     } else {
-      toggle.classList.add('disconnected');
-      toggle.textContent = 'Off';
+      const toggle = document.createElement('button');
+      toggle.className = 'tab-toggle';
+      if (tab.attached) {
+        toggle.classList.add('connected');
+        toggle.textContent = 'On';
+      } else {
+        toggle.classList.add('disconnected');
+        toggle.textContent = 'Off';
+      }
+      item.appendChild(toggle);
+
+      // Click toggle to attach/detach
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggle.disabled = true;
+        chrome.runtime.sendMessage({ type: 'toggleTab', tabId: tab.tabId }, () => {
+          refresh();
+        });
+      });
     }
-    item.appendChild(toggle);
 
     // Tab info
     const info = document.createElement('div');
@@ -158,15 +200,6 @@ function renderTabs(tabs, isFullBrowser) {
 
     permWrapper.appendChild(select);
     item.appendChild(permWrapper);
-
-    // Click toggle to attach/detach
-    toggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggle.disabled = true;
-      chrome.runtime.sendMessage({ type: 'toggleTab', tabId: tab.tabId }, () => {
-        refresh();
-      });
-    });
 
     container.appendChild(item);
   }
@@ -246,7 +279,7 @@ $('#updateBtn').addEventListener('click', () => {
   btn.textContent = 'Checking...';
   btn.disabled = true;
 
-  chrome.runtime.sendNativeMessage('com.pkrelay.token_reader', { action: 'pullUpdate' }, (resp) => {
+  chrome.runtime.sendNativeMessage('com.nooma.pkrelay', { action: 'pullUpdate' }, (resp) => {
     if (chrome.runtime.lastError) {
       // Native messaging not available — fall back to just reloading from disk
       chrome.storage.local.set({ updateFlash: 'Reloaded from disk' });

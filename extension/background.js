@@ -637,6 +637,25 @@ relay.on('pkrelay.permission.deny', (msg) => {
   updateTabBadge(tabId);
 });
 
+// --- Chrome notification button handler (Allow/Deny for "ask" permission) ---
+chrome.notifications.onButtonClicked.addListener((notifId, buttonIndex) => {
+  if (!notifId.startsWith('pkrelay-perm-')) return;
+  const tabId = parseInt(notifId.replace('pkrelay-perm-', ''), 10);
+  if (isNaN(tabId)) return;
+
+  const granted = buttonIndex === 0; // 0 = Allow, 1 = Deny
+  perms.resolvePermissionRequest(tabId, granted, granted ? 'session' : undefined);
+  updateTabBadge(tabId);
+  chrome.notifications.clear(notifId);
+  notifyPopup();
+});
+
+// Auto-clear notification if permission was resolved via popup
+chrome.notifications.onClosed.addListener((notifId) => {
+  // Nothing to do — if the user dismissed without clicking a button,
+  // the pending request stays until resolved via popup or timeout
+});
+
 // --- Extension reload (callable by agent) ---
 relay.on('pkrelay.reload', async (msg) => {
   const { id } = msg;
@@ -696,6 +715,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'connect') {
     relay.connect();
+    sendResponse({ ok: true });
+  }
+  if (msg.type === 'respondPermission') {
+    perms.resolvePermissionRequest(msg.tabId, msg.granted, msg.duration);
+    updateTabBadge(msg.tabId);
+    // Clear the notification if it was resolved via popup
+    chrome.notifications.clear(`pkrelay-perm-${msg.tabId}`);
     sendResponse({ ok: true });
   }
 });

@@ -33,7 +33,8 @@ export function registerTabTools(server: McpServer, bridge: NativeMessagingBridg
         .describe('Tab ID to attach the debugger to'),
     },
     async (params) => {
-      const result = await bridge.request('tabs.attach', { tabId: params.tabId });
+      // Longer timeout: user may need to respond to a permission notification
+      const result = await bridge.request('tabs.attach', { tabId: params.tabId }, 60000);
 
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
