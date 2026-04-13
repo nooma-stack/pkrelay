@@ -1,0 +1,26 @@
+{
+  "name": "@nooma-stack/pkrelay",
+  "version": "3.0.0",
+  "description": "Token-efficient AI browser bridge — MCP server for PKRelay Chrome extension",
+  "type": "module",
+  "bin": { "pkrelay": "./dist/index.js" },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^22.0.0"
+  },
+  "publishConfig": { "access": "public" },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nooma-stack/pkrelay.git",
+    "directory": "mcp-server"
+  }
+}
