@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header id="header">
+    <div class="header-left">
+      <span class="status-dot" id="statusDot"></span>
+      <strong>PKRelay</strong>
+    </div>
+    <div class="header-right">
+      <span id="connState">Disconnected</span>
+      <span id="connDesc" class="conn-desc"></span>
+    </div>
+  </header>
+
+  <div class="info-row">
+    <span class="label">Browser:</span>
+    <span id="browserName">Browser</span>
+  </div>
+  <div class="info-row">
+    <span class="label">CDP Server:</span>
+    <span id="relayUrl" class="mono">--</span>
+  </div>
+
+  <div id="standbyBanner" class="standby-banner" style="display:none">
+    <div class="standby-text">Standby — waiting for <strong id="standbyTarget">--</strong></div>
+    <button id="resumeBtn" class="btn-sm btn-resume">Resume</button>
+  </div>
+
+  <div class="section" id="switcherSection" style="display:none">
+    <div class="section-header">
+      <span>Switch Browser</span>
+    </div>
+    <div class="switcher-row">
+      <select id="browserSelect"></select>
+      <button id="switchBtn" class="btn-sm">Switch</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span>Browser Permission</span>
+      <select id="browserLevel">
+        <option value="per-tab">Per-Tab</option>
+        <option value="full-browser">Full Browser</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span>Tabs</span>
+      <button id="refreshBtn" class="icon-btn" title="Refresh">&#8635;</button>
+    </div>
+    <div id="tabList" class="tab-list">
+      <div class="empty">Loading...</div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-left">
+      <a href="#" id="settingsLink">Settings</a>
+      <span class="sep">&middot;</span>
+      <a href="#" id="feedbackLink">Feedback</a>
+      <span class="version" id="version">v--</span>
+    </div>
+    <div class="footer-right">
+      <button id="reloadBtn" class="icon-btn" title="Reload extension">&#8635;</button>
+      <button id="updateBtn" class="btn-sm btn-update" title="Check for updates from GitHub">Update</button>
+      <button id="connectBtn" class="btn-sm">Connect</button>
+    </div>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
