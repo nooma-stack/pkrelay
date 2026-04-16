@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
-export function registerSelectTool(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerSelectTool(server: McpServer, bridge: Bridge) {
   server.tool(
     'browser_select',
     'Select an option from a dropdown or select element.',

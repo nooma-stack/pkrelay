@@ -17,34 +17,29 @@ esac
 
 echo "Detected platform: $PLATFORM"
 
-# --- Find pkrelay binary ---
-BINARY_PATH=""
+# --- Locate launcher.js (same directory as this script) ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LAUNCHER_PATH="${SCRIPT_DIR}/launcher.js"
 
-# Check npm global bin first
-if command -v pkrelay &>/dev/null; then
-  BINARY_PATH="$(command -v pkrelay)"
-fi
-
-# Check local node_modules
-if [ -z "$BINARY_PATH" ] && [ -x "./node_modules/.bin/pkrelay" ]; then
-  BINARY_PATH="$(cd . && pwd)/node_modules/.bin/pkrelay"
-fi
-
-# Check npx path
-if [ -z "$BINARY_PATH" ]; then
-  NPM_BIN="$(npm bin -g 2>/dev/null || true)"
-  if [ -n "$NPM_BIN" ] && [ -x "${NPM_BIN}/pkrelay" ]; then
-    BINARY_PATH="${NPM_BIN}/pkrelay"
-  fi
-fi
-
-if [ -z "$BINARY_PATH" ]; then
-  echo "Error: Could not find 'pkrelay' binary."
-  echo "Install it first: npm install -g @nooma-stack/pkrelay"
+if [ ! -f "$LAUNCHER_PATH" ]; then
+  echo "Error: launcher.js not found at $LAUNCHER_PATH"
   exit 1
 fi
 
-echo "Found pkrelay binary: $BINARY_PATH"
+if [ ! -x "$LAUNCHER_PATH" ]; then
+  echo "Making launcher.js executable..."
+  chmod +x "$LAUNCHER_PATH"
+fi
+
+echo "Found launcher: $LAUNCHER_PATH"
+
+# --- Check that pkrelay binary is available (launcher spawns it) ---
+if ! command -v pkrelay &>/dev/null; then
+  echo "Warning: 'pkrelay' binary not found in PATH — launcher will need it."
+  echo "  Install it later with: npm install -g @nooma-stack/pkrelay"
+else
+  echo "Found pkrelay binary: $(command -v pkrelay)"
+fi
 
 # --- Build browser host directories ---
 declare -a BROWSER_DIRS=()
@@ -99,8 +94,8 @@ for i in "${!BROWSER_DIRS[@]}"; do
   cat > "$DIR/$MANIFEST_FILE" <<EOF
 {
   "name": "${HOST_NAME}",
-  "description": "PKRelay MCP Server — AI browser bridge",
-  "path": "${BINARY_PATH}",
+  "description": "PKRelay launcher — ensures broker daemon is running",
+  "path": "${LAUNCHER_PATH}",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://YOUR_EXTENSION_ID_HERE/"
@@ -113,7 +108,8 @@ EOF
 done
 
 echo ""
-echo "Native messaging host installed for: ${CONFIGURED[*]}"
+echo "Native messaging host (launcher) installed for: ${CONFIGURED[*]}"
+echo "  Launcher: $LAUNCHER_PATH"
 echo ""
 echo "IMPORTANT: Update the 'allowed_origins' in each manifest with your"
 echo "actual extension ID. Find it at chrome://extensions with developer mode on."

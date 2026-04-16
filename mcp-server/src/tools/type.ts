@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
-export function registerTypeTool(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerTypeTool(server: McpServer, bridge: Bridge) {
   server.tool(
     'browser_type',
     'Type text into an input field. Optionally clear the field first or submit after typing.',

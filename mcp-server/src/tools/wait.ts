@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
-export function registerWaitTool(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerWaitTool(server: McpServer, bridge: Bridge) {
   server.tool(
     'browser_wait',
     'Wait for a condition on the page — element to appear, text to be visible, or network to be idle.',

@@ -267,8 +267,19 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
   }
 });
 
-// --- Auto-connect on startup ---
-relay.connect();
+// --- Auto-start broker and connect ---
+function ensureBrokerAndConnect() {
+  chrome.runtime.sendNativeMessage('com.nooma.pkrelay', { action: 'ensure-broker' }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.warn('[PKRelay] Native messaging unavailable:', chrome.runtime.lastError.message);
+    } else {
+      console.log('[PKRelay] Broker status:', response?.status);
+    }
+    relay.connect();
+  });
+}
+
+ensureBrokerAndConnect();
 
 relay.onStateChange = (state) => {
   updateGlobalBadge();
@@ -733,6 +744,13 @@ relay.on('pkrelay.permission.deny', (msg) => {
   updateTabBadge(tabId);
 });
 
+relay.on('pkrelay.remote.statusUpdate', (msg) => {
+  chrome.runtime.sendMessage({
+    type: 'remoteStatusUpdate',
+    status: msg.params,
+  }).catch(() => {});
+});
+
 // --- Extension reload (callable by agent) ---
 relay.on('pkrelay.reload', async (msg) => {
   const { id } = msg;
@@ -798,5 +816,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     perms.resolvePermissionRequest(msg.tabId, msg.granted, msg.duration);
     updateTabBadge(msg.tabId);
     sendResponse({ ok: true });
+  }
+  if (msg.type === 'relayCommand') {
+    relay.request(msg.method, msg.params, 30000)
+      .then(result => sendResponse({ result }))
+      .catch(err => sendResponse({ error: err.message }));
+    return true;
   }
 });

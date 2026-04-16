@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
-export function registerNetworkTool(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerNetworkTool(server: McpServer, bridge: Bridge) {
   server.tool(
     'browser_network',
     'Get captured network requests and responses. Filter by URL pattern, HTTP method, or status code. Useful for debugging API calls.',

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
-export function registerScreenshotTool(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerScreenshotTool(server: McpServer, bridge: Bridge) {
   server.tool(
     'browser_screenshot',
     'Capture a screenshot of the current page. Can crop to a specific element or region for token efficiency. Use browser_snapshot first to identify elements, then screenshot specific areas.',

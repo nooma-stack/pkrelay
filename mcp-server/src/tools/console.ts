@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
-export function registerConsoleTool(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerConsoleTool(server: McpServer, bridge: Bridge) {
   server.tool(
     'browser_console',
     'Get recent browser console messages (errors, warnings, logs). Useful for debugging JavaScript errors and API failures.',

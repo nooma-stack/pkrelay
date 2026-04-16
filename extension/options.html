@@ -200,6 +200,41 @@
     .toast.show {
       opacity: 1;
     }
+
+    /* Remote sessions */
+    .section { margin-top: 32px; }
+
+    .remote-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #1a1a2e;
+      border: 1px solid #0f3460;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .remote-info { display: flex; flex-direction: column; gap: 2px; }
+    .remote-alias { font-size: 14px; font-weight: 600; color: #fff; }
+    .remote-detail { font-size: 12px; color: #8a8a9a; }
+
+    .remote-status { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .remote-status .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .remote-status .dot.connected { background: #22C55E; }
+    .remote-status .dot.connecting { background: #F59E0B; }
+    .remote-status .dot.disconnected { background: #6B7280; }
+    .remote-status .dot.error { background: #EF4444; }
+
+    .remote-actions { display: flex; gap: 8px; }
+    .remote-actions button { padding: 4px 10px; font-size: 12px; }
+
+    .btn-danger {
+      background: #7F1D1D;
+      color: #FCA5A5;
+      border: 1px solid #991B1B;
+    }
+    .btn-danger:hover { background: #991B1B; }
   </style>
 </head>
 <body>
@@ -246,6 +281,48 @@
       <li>Attach tabs by clicking the green/gray dot next to each tab in the popup</li>
       <li>Add PKRelay as an MCP server in your AI tool's config</li>
     </ol>
+  </div>
+
+  <!-- Remote Sessions -->
+  <div class="section" id="remoteSection">
+    <h2 style="font-size: 18px; margin-bottom: 16px; color: #fff;">Remote Sessions</h2>
+    <p class="help" style="margin-bottom: 16px;">
+      Connect Claude Code sessions on remote machines to this browser.
+      Each remote gets its own SSH tunnel and PKRelay-scoped key pair.
+    </p>
+
+    <div id="remoteList"></div>
+
+    <div class="guide" id="addRemoteForm" style="margin-top: 16px;">
+      <h2 style="font-size: 14px; margin-bottom: 12px;">Add Remote Machine</h2>
+      <div class="form-group">
+        <label for="remoteAlias">Alias</label>
+        <input type="text" id="remoteAlias" placeholder="mac-studio">
+        <p class="help">Friendly name for this remote</p>
+      </div>
+      <div class="form-group">
+        <label for="remoteHost">Hostname / IP</label>
+        <input type="text" id="remoteHost" placeholder="192.168.1.100 or mac-studio.local">
+      </div>
+      <div class="form-group">
+        <label for="remoteUser">Username</label>
+        <input type="text" id="remoteUser" placeholder="patrick">
+      </div>
+      <div class="form-group">
+        <label for="remotePassword">Password (one-time)</label>
+        <input type="password" id="remotePassword" placeholder="Used once for key setup, never stored">
+        <p class="help">Your SSH password. Used only to install the key pair, then discarded.</p>
+      </div>
+      <div class="form-group">
+        <label for="remotePort">Remote Tunnel Port</label>
+        <input type="text" id="remotePort" placeholder="18794" value="18794">
+        <p class="help">Port on the remote machine. Each remote needs a unique port. Remote Claude Code uses PKRELAY_BROKER=ws://localhost:PORT/mcp-client</p>
+      </div>
+      <div class="btn-row" style="margin-top: 16px;">
+        <button class="btn-primary" id="setupRemoteBtn">Setup &amp; Connect</button>
+        <span id="setupStatus"></span>
+      </div>
+    </div>
   </div>
 
   <p style="margin-top: 16px; font-size: 13px; color: #8a8a9a;">

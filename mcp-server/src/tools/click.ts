@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
-export function registerClickTool(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerClickTool(server: McpServer, bridge: Bridge) {
   server.tool(
     'browser_click',
     'Click an element on the page by CSS selector, visible text, or element index from a snapshot.',

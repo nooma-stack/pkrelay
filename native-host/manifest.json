@@ -1,6 +1,6 @@
 {
   "name": "com.nooma.pkrelay",
-  "description": "PKRelay MCP Server — AI browser bridge",
+  "description": "PKRelay launcher — ensures broker daemon is running",
   "path": "PLACEHOLDER_PATH",
   "type": "stdio",
   "allowed_origins": []

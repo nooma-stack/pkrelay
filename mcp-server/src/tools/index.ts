@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
 // Perception
 import { registerSnapshotTool } from './snapshot.js';
@@ -20,7 +20,7 @@ import { registerNetworkTool } from './network.js';
 // Tab management
 import { registerTabTools } from './tabs.js';
 
-export function registerTools(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerTools(server: McpServer, bridge: Bridge) {
   // Perception
   registerSnapshotTool(server, bridge);
   registerScreenshotTool(server, bridge);

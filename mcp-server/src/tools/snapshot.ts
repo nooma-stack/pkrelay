@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { NativeMessagingBridge } from '../bridge.js';
+import type { Bridge } from '../bridge-interface.js';
 
-export function registerSnapshotTool(server: McpServer, bridge: NativeMessagingBridge) {
+export function registerSnapshotTool(server: McpServer, bridge: Bridge) {
   server.tool(
     'browser_snapshot',
     'Get a token-efficient structured representation of the current page. Returns headings, forms, buttons, links, and text with element indices and bounding boxes.',
