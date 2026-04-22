@@ -61,7 +61,7 @@ export interface Bridge {
 
 **Step 2: Verify it compiles**
 
-Run: `cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
+Run: `cd ~/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
 Expected: No new errors
 
 **Step 3: Commit**
@@ -99,7 +99,7 @@ The `request()` method is only used when this process is ALSO an MCP server (bro
 
 **Step 2: Verify it compiles**
 
-Run: `cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
+Run: `cd ~/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
 
 **Step 3: Commit**
 
@@ -223,7 +223,7 @@ export class ClientBridge extends EventEmitter implements Bridge {
 
 **Step 2: Verify it compiles**
 
-Run: `cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
+Run: `cd ~/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
 
 **Step 3: Commit**
 
@@ -269,7 +269,7 @@ import type { Bridge } from '../bridge-interface.js';
 
 **Step 3: Verify it compiles**
 
-Run: `cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
+Run: `cd ~/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
 
 **Step 4: Commit**
 
@@ -366,7 +366,7 @@ main().catch((err) => {
 
 **Step 2: Verify it compiles**
 
-Run: `cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
+Run: `cd ~/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
 
 **Step 3: Commit**
 
@@ -481,7 +481,7 @@ main().catch((err) => {
 **Step 2: Make it executable**
 
 ```bash
-chmod +x /Users/patrickkelly/Developer/nooma-stack/pkrelay/native-host/launcher.js
+chmod +x ~/nooma-stack/pkrelay/native-host/launcher.js
 ```
 
 **Step 3: Commit**
@@ -516,7 +516,7 @@ Key changes:
 
 **Step 3: Verify install script works**
 
-Run: `cd /Users/patrickkelly/Developer/nooma-stack/pkrelay && bash native-host/install.sh`
+Run: `cd ~/nooma-stack/pkrelay && bash native-host/install.sh`
 
 **Step 4: Commit**
 
@@ -574,7 +574,7 @@ git commit -m "feat: auto-start broker via native messaging on extension load"
 **Step 1: Build TypeScript**
 
 ```bash
-cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server
+cd ~/nooma-stack/pkrelay/mcp-server
 npx tsc
 ```
 
@@ -587,14 +587,14 @@ pkill -f "node.*pkrelay" || true
 **Step 3: Reinstall npm link**
 
 ```bash
-cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server
+cd ~/nooma-stack/pkrelay/mcp-server
 npm link
 ```
 
 **Step 4: Reinstall native host**
 
 ```bash
-cd /Users/patrickkelly/Developer/nooma-stack/pkrelay
+cd ~/nooma-stack/pkrelay
 bash native-host/install.sh
 ```
 
@@ -658,7 +658,7 @@ Where `<DEV_PORT>` is unique per dev (18793, 18794, 18795, ...).
 ### Step 1: Install ssh2
 
 ```bash
-cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server
+cd ~/nooma-stack/pkrelay/mcp-server
 npm install ssh2
 npm install -D @types/ssh2
 ```
@@ -1058,7 +1058,7 @@ export class TunnelManager extends EventEmitter {
 
 ### Step 4: Verify it compiles
 
-Run: `cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
+Run: `cd ~/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
 
 ### Step 5: Commit
 
@@ -1132,7 +1132,7 @@ On shutdown (SIGTERM/SIGINT), call `tunnelManager.stopAllTunnels()`.
 
 ### Step 3: Verify it compiles
 
-Run: `cd /Users/patrickkelly/Developer/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
+Run: `cd ~/nooma-stack/pkrelay/mcp-server && npx tsc --noEmit`
 
 ### Step 4: Commit
 
@@ -1182,7 +1182,7 @@ Insert after the existing "Getting Started" guide div, before the GitHub link. U
     </div>
     <div class="form-group">
       <label for="remoteUser">Username</label>
-      <input type="text" id="remoteUser" placeholder="patrick">
+      <input type="text" id="remoteUser" placeholder="username">
     </div>
     <div class="form-group">
       <label for="remotePassword">Password (one-time)</label>

@@ -46,7 +46,7 @@ Example:
 ```
 Host mac-studio
   HostName 192.168.1.50
-  User patrick
+  User yourname
   RemoteForward 18794 localhost:18793
 ```
 
