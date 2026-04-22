@@ -1,15 +1,47 @@
 {
   "name": "@nooma-stack/pkrelay",
-  "version": "3.0.0",
-  "description": "Token-efficient AI browser bridge — MCP server for PKRelay Chrome extension",
+  "version": "3.1.0",
+  "description": "Token-efficient AI browser bridge — MCP server for the PKRelay Chrome extension. Works with Claude, Cursor, and any MCP-compatible AI tool.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "browser-automation",
+    "chrome-extension",
+    "ai",
+    "llm",
+    "claude",
+    "cursor",
+    "browser-bridge",
+    "agent"
+  ],
+  "homepage": "https://github.com/nooma-stack/pkrelay#readme",
+  "bugs": {
+    "url": "https://github.com/nooma-stack/pkrelay/issues"
+  },
+  "author": "nooma-stack",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nooma-stack/pkrelay.git",
+    "directory": "mcp-server"
+  },
   "type": "module",
   "bin": {
     "pkrelay": "./dist/index.js"
   },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -25,11 +57,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nooma-stack/pkrelay.git",
-    "directory": "mcp-server"
   }
 }
