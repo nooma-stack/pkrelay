@@ -1,0 +1,36 @@
+# Test, typecheck, and build only.
+# The GitHub Publish workflow (.github/workflows/publish.yml) is not ported:
+# it publishes to npm and creates a GitHub release, and it needs NPM_TOKEN,
+# which is not present on Forgejo.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # Mirrors .github/workflows/ci.yml job "build": Node 20, npm ci, tsc --noEmit, npm run build.
+  # There is no separate lint, unit-test, or security-scan job in the GitHub workflow.
+  build:
+    runs-on: nooma-build
+    container:
+      image: node:20-bookworm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p mcp-server/tsconfig.json
+
+      - name: Build
+        run: npm run build
